@@ -1,0 +1,1076 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src https://api.pwnedpasswords.com; base-uri 'none'; form-action 'none'">
+<meta name="color-scheme" content="light dark">
+<title>Passwords</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230a84ff'/%3E%3Ccircle cx='12' cy='14' r='5' fill='none' stroke='white' stroke-width='3'/%3E%3Cpath d='M16 16 L26 16 M22 16 V21 M26 16 V20' stroke='white' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#f5f5f7; --panel:#ffffff; --side:#ececf0; --text:#1d1d1f; --muted:#6e6e73; --line:#d9d9de;
+  --accent:#0a6cff; --accent-text:#ffffff; --hover:rgba(0,0,0,.05); --sel:#0a6cff; --sel-text:#fff;
+  --danger:#d70015; --warn:#b25e00; --ok:#1a7f37; --field:#f2f2f5; --shadow:0 10px 40px rgba(0,0,0,.25);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#1c1c1e; --panel:#2a2a2d; --side:#232326; --text:#f5f5f7; --muted:#a1a1a6; --line:#3d3d41;
+    --accent:#3b8cff; --accent-text:#fff; --hover:rgba(255,255,255,.07); --sel:#2f6fe0; --sel-text:#fff;
+    --danger:#ff6961; --warn:#ffb340; --ok:#4ccf6b; --field:#363639; --shadow:0 10px 40px rgba(0,0,0,.6);
+  }
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font-family:"Segoe UI Variable","Segoe UI",system-ui,-apple-system,sans-serif;font-size:14px;color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+.hidden{display:none!important}
+svg{display:block}
+
+/* ---------- buttons & fields ---------- */
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:7px 14px;font-weight:500}
+.btn:hover{background:var(--hover)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-text)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.danger{color:var(--danger)}
+.btn.small{padding:4px 10px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:default}
+.iconbtn{border:0;background:transparent;border-radius:8px;width:32px;height:32px;display:grid;place-items:center;color:var(--muted)}
+.iconbtn:hover{background:var(--hover);color:var(--text)}
+.input{width:100%;border:1px solid var(--line);background:var(--field);border-radius:8px;padding:8px 10px;outline:none}
+.input:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
+textarea.input{resize:vertical;min-height:70px}
+label.lbl{display:block;font-size:12px;color:var(--muted);margin:12px 0 4px}
+.err{color:var(--danger);font-size:13px;min-height:18px;margin-top:8px}
+.muted{color:var(--muted)}
+
+/* ---------- lock screen ---------- */
+#lock{position:fixed;inset:0;display:grid;place-items:center;background:var(--bg);z-index:50;padding:16px;overflow:auto}
+.lockcard{width:min(420px,100%);background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:28px;box-shadow:var(--shadow)}
+.lockcard .logo{width:56px;height:56px;border-radius:14px;background:var(--accent);display:grid;place-items:center;margin:0 auto 12px;color:#fff}
+.lockcard h1{font-size:22px;text-align:center;margin:0 0 4px}
+.lockcard p.sub{text-align:center;color:var(--muted);margin:0 0 18px}
+.chk{display:flex;gap:8px;align-items:flex-start;margin-top:14px;font-size:13px;color:var(--muted)}
+.chk input{margin-top:2px}
+.linkbtn{background:none;border:0;color:var(--accent);padding:0;font-size:13px}
+.linkbtn:hover{text-decoration:underline}
+.meter{height:5px;border-radius:3px;background:var(--line);margin-top:6px;overflow:hidden}
+.meter>i{display:block;height:100%;width:0;background:var(--danger);transition:width .2s,background .2s}
+
+/* ---------- main layout ---------- */
+#app{display:grid;grid-template-columns:230px 330px 1fr;height:100vh}
+#side{background:var(--side);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:12px 10px;min-height:0}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 8px 12px;font-weight:600;font-size:16px}
+.brand .logo{width:28px;height:28px;border-radius:7px;background:var(--accent);display:grid;place-items:center;color:#fff}
+#q{margin-bottom:10px}
+#nav{display:flex;flex-direction:column;gap:2px;flex:1;overflow:auto}
+.navitem{display:flex;align-items:center;gap:10px;border:0;background:transparent;text-align:left;border-radius:8px;padding:8px 10px;width:100%}
+.navitem:hover{background:var(--hover)}
+.navitem.active{background:var(--sel);color:var(--sel-text)}
+.navitem .count{margin-left:auto;font-size:12px;opacity:.75}
+.navitem .badge{margin-left:auto;background:var(--danger);color:#fff;border-radius:10px;font-size:11px;padding:1px 7px;font-weight:600}
+.sidefoot{border-top:1px solid var(--line);padding-top:8px;display:flex;flex-direction:column;gap:2px}
+
+#listpane{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.listhead{display:flex;align-items:center;gap:8px;padding:14px 14px 10px}
+.listhead h2{margin:0;font-size:18px;flex:1}
+#list{overflow:auto;flex:1;padding:0 8px 16px}
+.letter{font-size:12px;font-weight:600;color:var(--muted);padding:12px 8px 4px;position:sticky;top:0;background:var(--panel)}
+.row{display:flex;align-items:center;gap:10px;padding:8px;border-radius:10px;cursor:pointer;border:0;background:transparent;width:100%;text-align:left}
+.row:hover{background:var(--hover)}
+.row.active{background:var(--sel);color:var(--sel-text)}
+.row.active .sub{color:rgba(255,255,255,.8)}
+.row .txt{min-width:0;flex:1}
+.row .ttl{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .sub{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .rcode{font-variant-numeric:tabular-nums;font-size:18px;letter-spacing:1px;font-weight:600}
+.avatar{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;color:#fff;font-weight:700;flex:none}
+.avatar.big{width:56px;height:56px;border-radius:14px;font-size:24px}
+.empty{color:var(--muted);text-align:center;padding:40px 20px}
+.banner{margin:4px 6px 8px;padding:10px 12px;border-radius:10px;background:color-mix(in srgb,var(--warn) 14%,transparent);border:1px solid color-mix(in srgb,var(--warn) 35%,transparent);font-size:13px}
+.banner .btn{margin-top:8px}
+.sechead{font-weight:600;padding:14px 8px 4px;font-size:13px}
+.seccard{margin:4px 6px 8px;padding:12px;border-radius:12px;background:var(--field);font-size:13px}
+.seccard .btn{margin-top:8px}
+
+#detailpane{overflow:auto;min-height:0;padding:28px 32px}
+.dhead{display:flex;align-items:center;gap:16px;margin-bottom:20px}
+.dhead h2{margin:0;font-size:22px;word-break:break-word}
+.dactions{margin-left:auto;display:flex;gap:8px;flex:none}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;max-width:620px}
+.field{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.field:last-child{border-bottom:0}
+.field .k{width:120px;flex:none;color:var(--muted);font-size:13px}
+.field .v{flex:1;min-width:0;word-break:break-all;white-space:pre-wrap}
+.field .v.mono{font-family:"Cascadia Mono",Consolas,monospace}
+.field a{color:var(--accent)}
+.tag{display:inline-block;font-size:12px;border-radius:6px;padding:1px 8px;margin-left:6px;font-weight:600}
+.tag.bad{background:color-mix(in srgb,var(--danger) 16%,transparent);color:var(--danger)}
+.tag.warn{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
+.tag.good{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
+.bigcode{font-size:26px;font-variant-numeric:tabular-nums;letter-spacing:3px;font-weight:600}
+.ring{width:22px;height:22px;border-radius:50%;flex:none;background:conic-gradient(var(--accent) var(--p,0%),var(--line) 0)}
+.ring::after{content:"";display:block;width:14px;height:14px;border-radius:50%;background:var(--panel);margin:4px}
+.meta{margin-top:14px;color:var(--muted);font-size:12.5px;max-width:620px}
+.backbtn{display:none}
+
+/* ---------- modal ---------- */
+#modalwrap{position:fixed;inset:0;background:rgba(0,0,0,.45);display:grid;place-items:center;z-index:55;padding:16px}
+.modal{width:min(520px,100%);max-height:calc(100vh - 32px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;box-shadow:var(--shadow)}
+.modal h3{margin:0 0 4px;font-size:18px}
+.modal .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.inline{display:flex;gap:8px}
+.hr{height:1px;background:var(--line);margin:16px 0}
+.setrow{display:flex;align-items:center;gap:10px;margin:10px 0}
+.setrow .grow{flex:1}
+.optgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;margin-top:8px;font-size:13px}
+.optgrid label{display:flex;gap:6px;align-items:center}
+
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1d1d1f;color:#fff;border-radius:10px;padding:10px 16px;font-size:13px;z-index:70;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw}
+#toast.show{opacity:1}
+@media (prefers-color-scheme: dark){#toast{background:#f5f5f7;color:#1d1d1f}}
+
+@media (max-width:900px){
+  #app{grid-template-columns:200px 1fr}
+  #detailpane{position:fixed;inset:0;background:var(--bg);z-index:20;display:none;padding:18px}
+  #app.showdetail #detailpane{display:block}
+  .backbtn{display:inline-flex}
+}
+@media (max-width:620px){
+  #app{grid-template-columns:1fr}
+  #side{display:none}
+  #app.shownav #side{display:flex;position:fixed;inset:0;z-index:15}
+}
+</style>
+</head>
+<body>
+<noscript>This app needs JavaScript.</noscript>
+
+<!-- Lock / setup screen -->
+<div id="lock"></div>
+
+<!-- Main app -->
+<div id="app" class="hidden">
+  <aside id="side">
+    <div class="brand"><span class="logo" id="brandlogo"></span><span>Passwords</span></div>
+    <input id="q" class="input" type="search" placeholder="Search" aria-label="Search">
+    <nav id="nav"></nav>
+    <div class="sidefoot">
+      <button class="navitem" id="btnSettings"></button>
+      <button class="navitem" id="btnLock"></button>
+    </div>
+  </aside>
+  <section id="listpane">
+    <div class="listhead">
+      <button class="iconbtn backbtn" id="btnNavBack" aria-label="Sections" title="Sections"></button>
+      <h2 id="listtitle">All</h2>
+      <button class="iconbtn" id="btnAdd" aria-label="Add" title="Add"></button>
+    </div>
+    <div id="list"></div>
+  </section>
+  <main id="detailpane"></main>
+</div>
+
+<div id="modalwrap" class="hidden"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+/* =====================================================================
+   Passwords for Windows — single-file, offline password manager.
+   Crypto: PBKDF2-SHA256 (600k) -> AES-256-GCM via the browser's Web Crypto.
+   Nothing is sent anywhere (except the optional leak check, k-anonymity).
+   ===================================================================== */
+
+/* ---------- tiny DOM helper (never uses innerHTML with user data) ---------- */
+function h(tag, props, ...kids){
+  const e = document.createElement(tag);
+  if (props) for (const [k, v] of Object.entries(props)){
+    if (v == null || v === false) continue;
+    if (k === 'class') e.className = v;
+    else if (k === 'text') e.textContent = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else if (k === 'value') e.value = v;
+    else if (k === 'checked') e.checked = !!v;
+    else if (v === true) e.setAttribute(k, '');
+    else e.setAttribute(k, v);
+  }
+  for (const c of kids.flat(Infinity)){
+    if (c == null || c === false) continue;
+    e.append(c instanceof Node ? c : document.createTextNode(String(c)));
+  }
+  return e;
+}
+const $ = id => document.getElementById(id);
+
+/* ---------- icons (static strings only) ---------- */
+const ICONS = {
+  key:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3 21 2M17 6l3 3M14 9l2 2"/></svg>',
+  keyBig:'<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3 21 2M17 6l3 3M14 9l2 2"/></svg>',
+  clock:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  wifi:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 9a15 15 0 0 1 20 0M5 12.5a10.5 10.5 0 0 1 14 0M8.5 16a5.5 5.5 0 0 1 7 0"/><circle cx="12" cy="19.5" r="1" fill="currentColor"/></svg>',
+  shield:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg>',
+  trash:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg>',
+  gear:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+  lock:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
+  plus:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  back:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>',
+  copy:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg>',
+  eye:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+  eyeoff:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4M6.5 6.6C3.7 8.4 2 12 2 12s3.5 7 10 7a9.8 9.8 0 0 0 4-.9M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>'
+};
+function icon(name){ const s = h('span'); s.innerHTML = ICONS[name]; s.style.display = 'inline-flex'; return s; }
+function setIcon(el, name){ el.replaceChildren(icon(name)); }
+
+/* ---------- encoding helpers ---------- */
+const enc = new TextEncoder(), dec = new TextDecoder();
+function b64e(buf){ const b = new Uint8Array(buf); let s = ''; for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(s); }
+function b64d(str){ const s = atob(str); const b = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i); return b; }
+
+/* ---------- crypto ---------- */
+const LS_KEY = 'pwvault.v1';
+const ITER = 600000;
+const AAD = enc.encode('pwvault/v1');
+
+async function deriveKey(pw, salt, iter){
+  const km = await crypto.subtle.importKey('raw', enc.encode(pw.normalize('NFKC')), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({ name:'PBKDF2', salt, iterations:iter, hash:'SHA-256' }, km, { name:'AES-GCM', length:256 }, false, ['encrypt','decrypt']);
+}
+async function sealPayload(key, salt, iter, payload){
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({ name:'AES-GCM', iv, additionalData:AAD }, key, enc.encode(JSON.stringify(payload)));
+  return { v:1, kdf:'PBKDF2-SHA256', iter, salt:b64e(salt), iv:b64e(iv), ct:b64e(ct) };
+}
+function validBlob(b){
+  return b && typeof b === 'object' && b.v === 1 && b.kdf === 'PBKDF2-SHA256' &&
+    Number.isInteger(b.iter) && b.iter >= 100000 && b.iter <= 5000000 &&
+    typeof b.salt === 'string' && typeof b.iv === 'string' && typeof b.ct === 'string';
+}
+async function openBlob(blob, pw){
+  if (!validBlob(blob)) throw new Error('bad-format');
+  const salt = b64d(blob.salt);
+  const key = await deriveKey(pw, salt, blob.iter);
+  let pt;
+  try { pt = await crypto.subtle.decrypt({ name:'AES-GCM', iv:b64d(blob.iv), additionalData:AAD }, key, b64d(blob.ct)); }
+  catch(e){ throw new Error('bad-password'); }
+  const payload = JSON.parse(dec.decode(pt));
+  if (!payload || !Array.isArray(payload.items)) throw new Error('bad-format');
+  return { key, salt, iter:blob.iter, payload };
+}
+
+/* ---------- random / generator ---------- */
+function randInt(max){
+  const lim = Math.floor(4294967296 / max) * max;
+  const a = new Uint32Array(1);
+  do { crypto.getRandomValues(a); } while (a[0] >= lim);
+  return a[0] % max;
+}
+function pick(s){ return s[randInt(s.length)]; }
+function shuffle(arr){ for (let i = arr.length - 1; i > 0; i--){ const j = randInt(i + 1); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; }
+const LOWER = 'abcdefghijkmnopqrstuvwxyz', UPPER = 'ABCDEFGHJKLMNPQRSTUVWXYZ', DIGITS = '23456789', SYMBOLS = '!@#$%^&*-_+=?';
+/* Apple-style: three groups of six, e.g. "hupxoc-3hovDi-bejvik" */
+function generateStrong(){
+  const chars = [];
+  for (let i = 0; i < 18; i++) chars.push(pick(LOWER));
+  const pos = shuffle([...Array(18).keys()]);
+  chars[pos[0]] = pick(DIGITS);
+  chars[pos[1]] = pick(UPPER);
+  const s = chars.join('');
+  return s.slice(0, 6) + '-' + s.slice(6, 12) + '-' + s.slice(12);
+}
+function generateCustom(len, o){
+  const sets = [LOWER];
+  if (o.upper) sets.push(UPPER);
+  if (o.digits) sets.push(DIGITS);
+  if (o.symbols) sets.push(SYMBOLS);
+  len = Math.max(len, sets.length);
+  const all = sets.join('');
+  const out = sets.map(s => pick(s));
+  while (out.length < len) out.push(pick(all));
+  return shuffle(out).join('');
+}
+
+/* ---------- password strength heuristics ---------- */
+const COMMON = new Set(['password','123456','12345678','123456789','1234567890','12345','1234','qwerty','qwerty123','abc123','letmein','monkey','111111','000000','654321','123123','iloveyou','admin','welcome','login','princess','dragon','passw0rd','master','hello','freedom','whatever','qazwsx','trustno1','sunshine','football','baseball','superman','michael','shadow','password1','changeme','default','secret','guest','root','test','user','abc','abcd','abcde','abcdef']);
+const COMMON_BASES = ['password','qwerty','letmein','iloveyou','welcome','admin','monkey','dragon','sunshine','football','baseball','superman','princess','changeme','passw0rd'];
+function assess(pw){
+  const reasons = [];
+  if (!pw) return { weak:false, reasons, bits:0 };
+  const lower = pw.toLowerCase();
+  const base = lower.replace(/[^a-z]/g, '');
+  if (COMMON.has(lower) || COMMON.has(base)) reasons.push('is a very common password');
+  else if (COMMON_BASES.some(w => base.includes(w))) reasons.push('is built on a common word');
+  if (pw.length < 8) reasons.push('is shorter than 8 characters');
+  if (/^(.)\1+$/.test(pw)) reasons.push('repeats one character');
+  const seqs = ['abcdefghijklmnopqrstuvwxyz','zyxwvutsrqponmlkjihgfedcba','0123456789','9876543210','qwertyuiopasdfghjklzxcvbnm'];
+  if (pw.length >= 4 && seqs.some(s => s.includes(lower))) reasons.push('is a simple sequence');
+  let pool = 0;
+  if (/[a-z]/.test(pw)) pool += 26;
+  if (/[A-Z]/.test(pw)) pool += 26;
+  if (/[0-9]/.test(pw)) pool += 10;
+  if (/[^A-Za-z0-9]/.test(pw)) pool += 33;
+  const bits = pool ? pw.length * Math.log2(pool) : 0;
+  if (!reasons.length && bits < 40) reasons.push('is easy to guess');
+  return { weak: reasons.length > 0, reasons, bits };
+}
+function masterStrength(pw){
+  const a = assess(pw);
+  const score = Math.max(0, Math.min(1, a.bits / 80));
+  return { score: a.weak ? Math.min(score, 0.3) : score, weak: a.weak };
+}
+
+/* ---------- TOTP (RFC 6238) ---------- */
+const B32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+function b32decode(s){
+  s = s.replace(/[\s=-]/g, '').toUpperCase();
+  if (!s) throw new Error('empty');
+  let bits = 0, val = 0; const out = [];
+  for (const ch of s){
+    const i = B32.indexOf(ch);
+    if (i < 0) throw new Error('bad-char');
+    val = (val << 5) | i; bits += 5;
+    if (bits >= 8){ bits -= 8; out.push((val >>> bits) & 255); }
+  }
+  if (!out.length) throw new Error('empty');
+  return new Uint8Array(out);
+}
+function parseTotp(input){
+  input = (input || '').trim();
+  if (!input) return null;
+  let secret = input, algo = 'SHA-1', digits = 6, period = 30;
+  if (/^otpauth:\/\//i.test(input)){
+    let u;
+    try { u = new URL(input); } catch(e){ throw new Error('That otpauth:// link is not valid.'); }
+    if (u.hostname.toLowerCase() !== 'totp') throw new Error('Only time-based (TOTP) codes are supported.');
+    secret = u.searchParams.get('secret') || '';
+    const a = (u.searchParams.get('algorithm') || 'SHA1').toUpperCase().replace('SHA-', 'SHA');
+    algo = { SHA1:'SHA-1', SHA256:'SHA-256', SHA512:'SHA-512' }[a];
+    if (!algo) throw new Error('Unsupported code algorithm: ' + a);
+    const d = parseInt(u.searchParams.get('digits') || '6', 10);
+    if (![6,7,8].includes(d)) throw new Error('Unsupported number of digits.');
+    digits = d;
+    const p = parseInt(u.searchParams.get('period') || '30', 10);
+    if (!(p >= 5 && p <= 300)) throw new Error('Unsupported code period.');
+    period = p;
+  }
+  try { b32decode(secret); } catch(e){ throw new Error('The setup key is not valid. It should contain only letters A–Z and digits 2–7.'); }
+  return { secret: secret.replace(/[\s=-]/g, '').toUpperCase(), algo, digits, period };
+}
+async function hotp(keyBytes, counter, digits, algo){
+  const k = await crypto.subtle.importKey('raw', keyBytes, { name:'HMAC', hash:algo }, false, ['sign']);
+  const buf = new ArrayBuffer(8), dv = new DataView(buf);
+  dv.setUint32(0, Math.floor(counter / 4294967296));
+  dv.setUint32(4, counter >>> 0);
+  const sig = new Uint8Array(await crypto.subtle.sign('HMAC', k, buf));
+  const off = sig[sig.length - 1] & 15;
+  const bin = ((sig[off] & 0x7f) << 24) | (sig[off+1] << 16) | (sig[off+2] << 8) | sig[off+3];
+  return String(bin % Math.pow(10, digits)).padStart(digits, '0');
+}
+async function totpAt(t, tms){
+  const secs = Math.floor(tms / 1000);
+  return hotp(b32decode(t.secret), Math.floor(secs / t.period), t.digits, t.algo);
+}
+function fmtCode(c){ return c.length === 6 ? c.slice(0,3) + ' ' + c.slice(3) : c.length === 8 ? c.slice(0,4) + ' ' + c.slice(4) : c; }
+
+/* ---------- state ---------- */
+const S = {
+  key:null, salt:null, iter:ITER, items:[], settings:{ autoLockMin:5, clearClip:true, changes:0, lastBackup:0 },
+  view:'all', sel:null, q:'', reveal:false, leaks:new Map(), leakChecked:false, unlocked:false
+};
+const PURGE_MS = 30 * 24 * 3600 * 1000;
+
+function newId(){
+  if (crypto.randomUUID) return crypto.randomUUID();
+  return Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2,'0')).join('');
+}
+
+/* ---------- persistence ---------- */
+function storageOk(){
+  try { const k = '__t' + Math.random(); localStorage.setItem(k, '1'); localStorage.removeItem(k); return true; } catch(e){ return false; }
+}
+function loadBlob(){
+  let raw = null;
+  try { raw = localStorage.getItem(LS_KEY); } catch(e){ return null; }
+  if (!raw) return null;
+  try { const b = JSON.parse(raw); return validBlob(b) ? b : null; } catch(e){ return null; }
+}
+let saveChain = Promise.resolve();
+function persist(){
+  saveChain = saveChain.then(async () => {
+    if (!S.key) return;
+    try {
+      const blob = await sealPayload(S.key, S.salt, S.iter, { items:S.items, settings:S.settings });
+      localStorage.setItem(LS_KEY, JSON.stringify(blob));
+    } catch(e){
+      toast('Could not save to this browser. Export a backup now.');
+    }
+  });
+  return saveChain;
+}
+function touch(){ S.settings.changes = (S.settings.changes || 0) + 1; }
+
+/* ---------- toast & clipboard ---------- */
+let toastTimer = null;
+function toast(msg){
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+let clipTimer = null;
+async function copyText(text, label, sensitive){
+  let ok = false;
+  try { await navigator.clipboard.writeText(text); ok = true; }
+  catch(e){
+    const ta = h('textarea', { style:'position:fixed;left:-9999px' }); ta.value = text; document.body.append(ta); ta.select();
+    try { ok = document.execCommand('copy'); } catch(e2){} ta.remove();
+  }
+  if (!ok){ toast('Copy failed — select the text and press Ctrl+C.'); return; }
+  const clears = sensitive && S.settings.clearClip;
+  toast(label + ' copied' + (clears ? ' — clipboard clears in 30 s' : ''));
+  clearTimeout(clipTimer);
+  if (clears) clipTimer = setTimeout(() => { try { navigator.clipboard.writeText(' '); } catch(e){} }, 30000);
+}
+
+/* ---------- helpers ---------- */
+function hostOf(url){
+  if (!url) return '';
+  try { return new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(url) ? url : 'https://' + url).hostname.replace(/^www\./, ''); } catch(e){ return url; }
+}
+function safeHref(url){
+  if (!url) return null;
+  const u = /^[a-z][a-z0-9+.-]*:\/\//i.test(url) ? url : 'https://' + url;
+  try { const p = new URL(u); return (p.protocol === 'https:' || p.protocol === 'http:') && p.hostname.includes('.') ? p.href : null; } catch(e){ return null; }
+}
+function titleOf(i){ return i.title || hostOf(i.website) || i.username || 'Untitled'; }
+function avatarColor(s){ let x = 0; for (const c of s) x = (x * 31 + c.codePointAt(0)) >>> 0; return 'hsl(' + (x % 360) + ' 55% 46%)'; }
+function avatar(i, big){
+  const t = titleOf(i);
+  const a = h('div', { class:'avatar' + (big ? ' big' : ''), 'aria-hidden':'true' }, (Array.from(t)[0] || '?').toUpperCase());
+  a.style.background = i.type === 'wifi' ? 'var(--accent)' : avatarColor(t);
+  if (i.type === 'wifi'){ a.textContent = ''; a.append(icon('wifi')); }
+  return a;
+}
+function fmtDate(ts){ return ts ? new Date(ts).toLocaleString(undefined, { dateStyle:'medium', timeStyle:'short' }) : '—'; }
+function activeItems(){ return S.items.filter(i => !i.deleted); }
+
+/* ---------- security report ---------- */
+function securityReport(){
+  const logins = activeItems().filter(i => i.type === 'login' && i.password);
+  const groups = new Map();
+  for (const i of logins){ if (!groups.has(i.password)) groups.set(i.password, []); groups.get(i.password).push(i); }
+  const reused = [], weak = [], leaked = [];
+  for (const g of groups.values()) if (g.length > 1) reused.push(...g);
+  for (const i of logins){
+    const a = assess(i.password);
+    if (a.weak) weak.push({ item:i, why:a.reasons[0] });
+    if ((S.leaks.get(i.id) || 0) > 0) leaked.push({ item:i, n:S.leaks.get(i.id) });
+  }
+  const ids = new Set([...reused.map(i => i.id), ...weak.map(w => w.item.id), ...leaked.map(l => l.item.id)]);
+  return { reused, weak, leaked, count: ids.size, total: logins.length };
+}
+async function sha1hex(str){
+  const d = new Uint8Array(await crypto.subtle.digest('SHA-1', enc.encode(str)));
+  return Array.from(d, b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+}
+async function checkLeaks(){
+  const logins = activeItems().filter(i => i.type === 'login' && i.password);
+  const cache = new Map(); S.leaks = new Map();
+  for (const i of logins){
+    const hash = await sha1hex(i.password), pre = hash.slice(0, 5), suf = hash.slice(5);
+    if (!cache.has(pre)){
+      const r = await fetch('https://api.pwnedpasswords.com/range/' + pre, { headers:{ 'Add-Padding':'true' }, cache:'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const map = new Map();
+      for (const line of (await r.text()).split(/\r?\n/)){ const [s, n] = line.split(':'); if (s && n) map.set(s.trim().toUpperCase(), parseInt(n, 10) || 0); }
+      cache.set(pre, map);
+    }
+    const n = cache.get(pre).get(suf) || 0;
+    if (n > 0) S.leaks.set(i.id, n);
+  }
+  S.leakChecked = true;
+}
+
+/* ---------- lock screen ---------- */
+function showLock(){
+  S.unlocked = false; S.key = null; S.items = []; S.leaks = new Map(); S.leakChecked = false; S.sel = null; S.reveal = false;
+  $('app').classList.add('hidden'); closeModal();
+  const lock = $('lock'); lock.classList.remove('hidden'); lock.replaceChildren();
+  if (!window.isSecureContext || !crypto || !crypto.subtle){
+    lock.append(h('div', { class:'lockcard' }, h('h1', { text:'Browser not supported' }), h('p', { class:'sub', text:'This app needs a modern browser (Microsoft Edge or Google Chrome) with Web Crypto.' })));
+    return;
+  }
+  if (!storageOk()){
+    lock.append(h('div', { class:'lockcard' }, h('h1', { text:'Storage is blocked' }), h('p', { class:'sub', text:'Your browser is blocking local storage (private/InPrivate window or site data blocked). Open this file in a normal Edge or Chrome window.' })));
+    return;
+  }
+  const blob = loadBlob();
+  let raw = null; try { raw = localStorage.getItem(LS_KEY); } catch(e){}
+  if (blob) buildUnlock(lock);
+  else if (raw) buildCorrupt(lock);
+  else buildSetup(lock);
+}
+function buildCorrupt(lock){
+  lock.append(h('div', { class:'lockcard' }, logoBlock(), h('h1', { text:'Vault could not be read' }),
+    h('p', { class:'sub', text:'The saved data in this browser is damaged. Your data has NOT been deleted. If you have a backup file, restore it.' }),
+    h('button', { class:'btn primary', style:'width:100%', onclick:() => restoreFromBackupFlow() }, 'Restore from a backup file'),
+    h('div', { style:'text-align:center;margin-top:14px' }, h('button', { class:'linkbtn', onclick:() => confirmBox('Erase the damaged vault?', 'This removes the unreadable data and lets you start a new vault.', 'Erase', () => { try { localStorage.removeItem(LS_KEY); } catch(e){} showLock(); }) }, 'Erase it and start over'))));
+}
+function logoBlock(){ const l = h('div', { class:'logo' }); l.append(icon('keyBig')); return l; }
+
+function buildSetup(lock){
+  const pw = h('input', { class:'input', type:'password', autocomplete:'new-password', id:'sp1', 'aria-label':'Master password' });
+  const pw2 = h('input', { class:'input', type:'password', autocomplete:'new-password', id:'sp2', 'aria-label':'Confirm master password' });
+  const bar = h('i'); const meter = h('div', { class:'meter' }, bar);
+  const ack = h('input', { type:'checkbox', id:'ack' });
+  const err = h('div', { class:'err' });
+  const go = h('button', { class:'btn primary', type:'submit', style:'width:100%;margin-top:14px' }, 'Create vault');
+  pw.addEventListener('input', () => {
+    const m = masterStrength(pw.value);
+    bar.style.width = Math.round(m.score * 100) + '%';
+    bar.style.background = m.score < 0.35 ? 'var(--danger)' : m.score < 0.7 ? 'var(--warn)' : 'var(--ok)';
+  });
+  const form = h('form', { onsubmit: async ev => {
+    ev.preventDefault(); err.textContent = '';
+    if (pw.value.length < 10){ err.textContent = 'Use at least 10 characters.'; return; }
+    if (masterStrength(pw.value).weak){ err.textContent = 'That password is too easy to guess. Try a longer phrase of several words.'; return; }
+    if (pw.value !== pw2.value){ err.textContent = 'The two passwords do not match.'; return; }
+    if (!ack.checked){ err.textContent = 'Please confirm that you understand the warning.'; return; }
+    go.disabled = true; go.textContent = 'Creating…';
+    try {
+      S.salt = crypto.getRandomValues(new Uint8Array(16)); S.iter = ITER;
+      S.key = await deriveKey(pw.value, S.salt, S.iter);
+      S.items = []; S.settings = { autoLockMin:5, clearClip:true, changes:0, lastBackup:0 };
+      await persist();
+      if (!loadBlob()) throw new Error('save-failed');
+      enterApp();
+    } catch(e){ err.textContent = 'Could not create the vault: ' + (e.message === 'save-failed' ? 'saving to the browser failed.' : e.message); go.disabled = false; go.textContent = 'Create vault'; S.key = null; }
+  }},
+    h('label', { class:'lbl', for:'sp1', text:'Master password' }), pw, meter,
+    h('label', { class:'lbl', for:'sp2', text:'Confirm master password' }), pw2,
+    h('label', { class:'chk', for:'ack' }, ack, h('span', { text:'I understand that if I forget this master password, my passwords cannot be recovered by anyone.' })),
+    err, go);
+  const restore = h('button', { class:'linkbtn', type:'button', onclick:() => restoreFromBackupFlow() }, 'Restore from a backup file instead');
+  lock.append(h('div', { class:'lockcard' }, logoBlock(), h('h1', { text:'Create your vault' }),
+    h('p', { class:'sub', text:'Choose one strong master password. Everything is encrypted on this computer.' }), form,
+    h('div', { style:'text-align:center;margin-top:14px' }, restore)));
+  setTimeout(() => pw.focus(), 0);
+}
+
+let failCount = 0;
+function buildUnlock(lock){
+  const pw = h('input', { class:'input', type:'password', autocomplete:'current-password', 'aria-label':'Master password', placeholder:'Master password' });
+  const err = h('div', { class:'err', role:'alert' });
+  const go = h('button', { class:'btn primary', type:'submit', style:'width:100%;margin-top:6px' }, 'Unlock');
+  const form = h('form', { onsubmit: async ev => {
+    ev.preventDefault(); err.textContent = '';
+    if (!pw.value) return;
+    go.disabled = true; go.textContent = 'Unlocking…';
+    try {
+      const r = await openBlob(loadBlob(), pw.value);
+      failCount = 0;
+      S.key = r.key; S.salt = r.salt; S.iter = r.iter;
+      S.items = r.payload.items.filter(validItem);
+      S.settings = Object.assign({ autoLockMin:5, clearClip:true, changes:0, lastBackup:0 }, r.payload.settings || {});
+      pw.value = '';
+      enterApp();
+    } catch(e){
+      failCount++;
+      err.textContent = e.message === 'bad-password' ? 'Incorrect master password.' : 'The saved vault could not be read.';
+      pw.select();
+      const wait = Math.min(failCount - 1, 5) * 1000;
+      if (wait) await new Promise(r => setTimeout(r, wait));
+      go.disabled = false; go.textContent = 'Unlock';
+    }
+  }}, pw, err, go);
+  const restore = h('button', { class:'linkbtn', type:'button', onclick:() => restoreFromBackupFlow() }, 'Restore from a backup file');
+  lock.append(h('div', { class:'lockcard' }, logoBlock(), h('h1', { text:'Passwords' }),
+    h('p', { class:'sub', text:'Enter your master password to unlock.' }), form,
+    h('div', { style:'text-align:center;margin-top:14px' }, restore)));
+  setTimeout(() => pw.focus(), 0);
+}
+function validItem(i){
+  return i && typeof i === 'object' && typeof i.id === 'string' && (i.type === 'login' || i.type === 'wifi');
+}
+
+/* ---------- entering / leaving the app ---------- */
+function enterApp(){
+  S.unlocked = true;
+  const cutoff = Date.now() - PURGE_MS;
+  const before = S.items.length;
+  S.items = S.items.filter(i => !(i.deleted && i.deleted < cutoff));
+  if (S.items.length !== before) persist();
+  S.view = 'all'; S.sel = null; S.q = ''; $('q').value = '';
+  $('lock').classList.add('hidden'); $('lock').replaceChildren();
+  $('app').classList.remove('hidden'); $('app').classList.remove('showdetail', 'shownav');
+  render(); armIdle();
+}
+async function lockNow(){ clearTimeout(idleTimer); try { await saveChain; } catch(e){} showLock(); }
+
+let idleTimer = null;
+function armIdle(){
+  clearTimeout(idleTimer);
+  if (!S.unlocked) return;
+  const m = S.settings.autoLockMin;
+  if (m > 0) idleTimer = setTimeout(() => { if (S.unlocked){ lockNow(); } }, m * 60000);
+}
+['mousemove','keydown','click','touchstart','wheel'].forEach(ev => document.addEventListener(ev, () => { if (S.unlocked) armIdle(); }, { passive:true }));
+
+/* ---------- rendering ---------- */
+const VIEWS = [
+  ['all','All','key'], ['codes','Codes','clock'], ['wifi','Wi-Fi','wifi'], ['security','Security','shield'], ['deleted','Recently Deleted','trash']
+];
+function visibleItems(){
+  const q = S.q.trim().toLowerCase();
+  let list;
+  if (S.view === 'all') list = activeItems().filter(i => i.type === 'login');
+  else if (S.view === 'codes') list = activeItems().filter(i => i.type === 'login' && i.totp);
+  else if (S.view === 'wifi') list = activeItems().filter(i => i.type === 'wifi');
+  else if (S.view === 'deleted') list = S.items.filter(i => i.deleted);
+  else list = [];
+  if (q) list = list.filter(i => [i.title, i.website, i.username].some(f => (f || '').toLowerCase().includes(q)));
+  return list.sort((a, b) => titleOf(a).localeCompare(titleOf(b), undefined, { sensitivity:'base' }));
+}
+function render(){
+  renderNav(); renderList(); renderDetail(); startTicker();
+}
+function renderNav(){
+  const nav = $('nav'); nav.replaceChildren();
+  const rep = securityReport();
+  const counts = { all:activeItems().filter(i => i.type === 'login').length, codes:activeItems().filter(i => i.type === 'login' && i.totp).length,
+    wifi:activeItems().filter(i => i.type === 'wifi').length, deleted:S.items.filter(i => i.deleted).length };
+  for (const [id, label, ic] of VIEWS){
+    const b = h('button', { class:'navitem' + (S.view === id ? ' active' : ''), onclick:() => { S.view = id; S.sel = null; S.reveal = false; $('app').classList.remove('shownav'); render(); } }, icon(ic), h('span', { text:label }));
+    if (id === 'security'){ if (rep.count) b.append(h('span', { class:'badge', text:String(rep.count) })); }
+    else b.append(h('span', { class:'count', text:String(counts[id]) }));
+    nav.append(b);
+  }
+}
+function renderList(){
+  const title = (VIEWS.find(v => v[0] === S.view) || [])[1] || '';
+  $('listtitle').textContent = title;
+  $('btnAdd').classList.toggle('hidden', S.view === 'deleted' || S.view === 'security');
+  const list = $('list'); list.replaceChildren();
+  if (S.view === 'security'){ renderSecurityList(list); return; }
+  if (S.view !== 'deleted' && S.settings.changes >= 3 && activeItems().length){
+    list.append(h('div', { class:'banner' }, h('div', { text:'Your vault lives only in this browser. Save a backup file so you never lose it.' }),
+      h('button', { class:'btn small', onclick:exportBackup }, 'Save backup')));
+  }
+  if (S.view === 'deleted') list.append(h('div', { class:'muted', style:'padding:2px 10px 8px;font-size:12.5px', text:'Items are removed permanently after 30 days.' }));
+  const items = visibleItems();
+  if (!items.length){
+    const msg = S.q ? 'No results.' : S.view === 'deleted' ? 'Nothing here.' : S.view === 'codes' ? 'No verification codes yet. Edit a password and add a setup key.' : S.view === 'wifi' ? 'No Wi-Fi networks yet. Click + to add one.' : 'No passwords yet. Click + to add your first one.';
+    list.append(h('div', { class:'empty', text:msg })); return;
+  }
+  let last = '';
+  for (const i of items){
+    const t = titleOf(i); const L = (Array.from(t)[0] || '#').toUpperCase();
+    if (S.view !== 'codes' && L !== last){ list.append(h('div', { class:'letter', text:L })); last = L; }
+    const sub = i.type === 'wifi' ? 'Wi-Fi network' : (i.username || hostOf(i.website) || '');
+    const txt = h('div', { class:'txt' }, h('div', { class:'ttl', text:t }), h('div', { class:'sub', text:sub }));
+    const row = h('button', { class:'row' + (S.sel === i.id ? ' active' : ''), onclick:() => selectItem(i.id) }, avatar(i), txt);
+    if (S.view === 'codes') row.append(h('span', { class:'rcode', 'data-code':i.id, text:'······' }));
+    list.append(row);
+  }
+}
+function selectItem(id){ S.sel = id; S.reveal = false; $('app').classList.add('showdetail'); renderList(); renderDetail(); startTicker(); }
+
+function renderSecurityList(list){
+  const rep = securityReport();
+  const card = h('div', { class:'seccard' });
+  if (!rep.total) card.append(h('div', { text:'Add some passwords and this section will flag reused, weak and leaked ones.' }));
+  else card.append(h('div', { text: rep.count ? rep.count + ' of ' + rep.total + ' passwords need attention.' : 'No problems found in your ' + rep.total + ' passwords.' }));
+  const status = h('div', { class:'muted', style:'margin-top:6px', text: S.leakChecked ? 'Leak check finished.' : 'Leak check not run yet.' });
+  const btn = h('button', { class:'btn small', onclick: async () => {
+    btn.disabled = true; btn.textContent = 'Checking…';
+    try { await checkLeaks(); toast('Leak check finished'); }
+    catch(e){ toast('Could not reach the leak-check service. Are you online?'); }
+    render();
+  }}, 'Check for leaked passwords');
+  card.append(status, btn, h('div', { class:'muted', style:'margin-top:6px;font-size:12px', text:'Sends only the first 5 characters of a one-way hash of each password. Never the password itself.' }));
+  list.append(card);
+  const section = (title, rows) => {
+    if (!rows.length) return;
+    list.append(h('div', { class:'sechead', text:title + ' (' + rows.length + ')' }));
+    for (const { item, sub } of rows){
+      list.append(h('button', { class:'row' + (S.sel === item.id ? ' active' : ''), onclick:() => selectItem(item.id) }, avatar(item),
+        h('div', { class:'txt' }, h('div', { class:'ttl', text:titleOf(item) }), h('div', { class:'sub', text:sub }))));
+    }
+  };
+  section('Reused passwords', rep.reused.map(i => ({ item:i, sub:'Same password used on ' + (rep.reused.filter(x => x.password === i.password).length) + ' accounts' })));
+  section('Weak passwords', rep.weak.map(w => ({ item:w.item, sub:'Password ' + w.why })));
+  section('Leaked passwords', rep.leaked.map(l => ({ item:l.item, sub:'Found in ' + l.n.toLocaleString() + ' known data breaches' })));
+}
+
+function fieldRow(label, valueNode, actions){
+  return h('div', { class:'field' }, h('div', { class:'k', text:label }), valueNode, actions || null);
+}
+function copyBtn(text, label, sensitive){
+  return h('button', { class:'iconbtn', 'aria-label':'Copy ' + label, title:'Copy ' + label, onclick:() => copyText(text, label, sensitive) }, icon('copy'));
+}
+function renderDetail(){
+  const pane = $('detailpane'); pane.replaceChildren();
+  const it = S.items.find(i => i.id === S.sel);
+  const showable = it && (S.view === 'deleted' ? !!it.deleted : !it.deleted);
+  const back = h('button', { class:'iconbtn backbtn', 'aria-label':'Back', onclick:() => $('app').classList.remove('showdetail') }, icon('back'));
+  if (!showable){
+    pane.append(back, h('div', { class:'empty', style:'margin-top:20vh', text: S.view === 'security' ? 'Select an item to review it.' : 'Select an item' }));
+    return;
+  }
+  const head = h('div', { class:'dhead' }, back, avatar(it, true), h('h2', { text:titleOf(it) }));
+  const actions = h('div', { class:'dactions' });
+  if (it.deleted){
+    actions.append(
+      h('button', { class:'btn', onclick:() => { delete it.deleted; it.modified = Date.now(); touch(); persist(); S.sel = null; toast('Recovered'); render(); } }, 'Recover'),
+      h('button', { class:'btn danger', onclick:() => confirmBox('Delete permanently?', 'This cannot be undone.', 'Delete', () => { S.items = S.items.filter(x => x.id !== it.id); touch(); persist(); S.sel = null; render(); }) }, 'Delete'));
+  } else {
+    actions.append(
+      h('button', { class:'btn', onclick:() => openEditor(it) }, 'Edit'),
+      h('button', { class:'btn danger', onclick:() => { it.deleted = Date.now(); touch(); persist(); S.sel = null; toast('Moved to Recently Deleted'); render(); } }, 'Delete'));
+  }
+  head.append(actions);
+  pane.append(head);
+
+  const card = h('div', { class:'card' });
+  if (it.type === 'login'){
+    if (it.website){
+      const href = safeHref(it.website);
+      card.append(fieldRow('Website', h('div', { class:'v' }, href ? h('a', { href, target:'_blank', rel:'noopener noreferrer', text:it.website }) : it.website)));
+    }
+    if (it.username) card.append(fieldRow('User name', h('div', { class:'v', text:it.username }), copyBtn(it.username, 'User name', false)));
+  }
+  if (it.password !== undefined && it.password !== ''){
+    const a = assess(it.password);
+    const rep = securityReport();
+    const isReused = rep.reused.some(x => x.id === it.id);
+    const leakN = S.leaks.get(it.id) || 0;
+    const v = h('div', { class:'v mono', text: S.reveal ? it.password : '•'.repeat(Math.min(it.password.length, 20)) });
+    if (it.type === 'login'){
+      if (leakN) v.append(h('span', { class:'tag bad', text:'Leaked' }));
+      if (isReused) v.append(h('span', { class:'tag warn', text:'Reused' }));
+      if (a.weak) v.append(h('span', { class:'tag bad', text:'Weak' }));
+    }
+    const eye = h('button', { class:'iconbtn', 'aria-label': S.reveal ? 'Hide password' : 'Show password', title: S.reveal ? 'Hide' : 'Show', onclick:() => { S.reveal = !S.reveal; renderDetail(); startTicker(); } }, icon(S.reveal ? 'eyeoff' : 'eye'));
+    card.append(fieldRow(it.type === 'wifi' ? 'Wi-Fi password' : 'Password', v, h('div', { style:'display:flex' }, eye, copyBtn(it.password, 'Password', true))));
+    if (S.view === 'security' && (a.weak || isReused || leakN)){
+      const why = [];
+      if (a.weak) why.push('This password ' + a.reasons.join(' and ') + '.');
+      if (isReused) why.push('You use this password for more than one account.');
+      if (leakN) why.push('It appeared in ' + leakN.toLocaleString() + ' known data breaches.');
+      card.append(fieldRow('Advice', h('div', { class:'v', text: why.join(' ') + ' Change it on the website, then update it here.' })));
+    }
+  }
+  if (it.type === 'login' && it.totp){
+    const codeEl = h('div', { class:'v bigcode', 'data-code':it.id, text:'······' });
+    const ring = h('div', { class:'ring', 'data-ring':it.id });
+    card.append(fieldRow('Verification code', codeEl, h('div', { style:'display:flex;align-items:center;gap:8px' }, ring,
+      h('button', { class:'iconbtn', 'aria-label':'Copy verification code', title:'Copy verification code', onclick: async () => { try { copyText(await totpAt(it.totp, Date.now()), 'Verification code', true); } catch(e){ toast('Could not generate code'); } } }, icon('copy')))));
+  }
+  if (it.notes) card.append(fieldRow('Notes', h('div', { class:'v', text:it.notes })));
+  pane.append(card);
+  pane.append(h('div', { class:'meta' }, 'Modified ' + fmtDate(it.modified) + (it.created ? ' · Created ' + fmtDate(it.created) : '') + (it.deleted ? ' · Deleted ' + fmtDate(it.deleted) : '')));
+}
+
+/* ---------- live verification codes ---------- */
+let tickTimer = null;
+function startTicker(){
+  clearInterval(tickTimer);
+  tick();
+  tickTimer = setInterval(tick, 1000);
+}
+const codeCache = new Map(); // id -> {step, code}
+async function tick(){
+  if (!S.unlocked) return;
+  const now = Date.now();
+  const els = document.querySelectorAll('[data-code]');
+  for (const el of els){
+    const it = S.items.find(i => i.id === el.dataset.code);
+    if (!it || !it.totp) continue;
+    const step = Math.floor(now / 1000 / it.totp.period);
+    let c = codeCache.get(it.id);
+    if (!c || c.step !== step || c.sig !== it.totp.secret + it.totp.digits + it.totp.algo){
+      try { c = { step, sig: it.totp.secret + it.totp.digits + it.totp.algo, code: await totpAt(it.totp, now) }; codeCache.set(it.id, c); }
+      catch(e){ el.textContent = 'Error'; continue; }
+    }
+    el.textContent = fmtCode(c.code);
+  }
+  for (const r of document.querySelectorAll('[data-ring]')){
+    const it = S.items.find(i => i.id === r.dataset.ring); if (!it || !it.totp) continue;
+    const p = it.totp.period, left = p - ((now / 1000) % p);
+    r.style.setProperty('--p', Math.round(left / p * 100) + '%');
+    r.title = Math.ceil(left) + ' s left';
+  }
+}
+
+/* ---------- modal plumbing ---------- */
+let modalOnClose = null;
+function openModal(node, onClose){
+  const w = $('modalwrap'); w.replaceChildren(node); w.classList.remove('hidden'); modalOnClose = onClose || null;
+  const f = node.querySelector('input,textarea,select,button'); if (f) setTimeout(() => f.focus(), 0);
+}
+function closeModal(){ const w = $('modalwrap'); w.classList.add('hidden'); w.replaceChildren(); if (modalOnClose){ const f = modalOnClose; modalOnClose = null; f(); } }
+$('modalwrap').addEventListener('mousedown', e => { if (e.target === $('modalwrap')) closeModal(); });
+function confirmBox(title, text, okLabel, onOk){
+  openModal(h('div', { class:'modal' }, h('h3', { text:title }), h('p', { class:'muted', text:text }),
+    h('div', { class:'actions' }, h('button', { class:'btn', onclick:closeModal }, 'Cancel'), h('button', { class:'btn primary', onclick:() => { closeModal(); onOk(); } }, okLabel))));
+}
+
+/* ---------- add / edit ---------- */
+function openEditor(existing){
+  const isNew = !existing;
+  const type = existing ? existing.type : (S.view === 'wifi' ? 'wifi' : 'login');
+  const d = existing ? Object.assign({}, existing) : { type, title:'', website:'', username:'', password:'', notes:'' };
+  const f = {
+    title: h('input', { class:'input', type:'text', value:d.title || '', id:'f_title', autocomplete:'off', placeholder: type === 'wifi' ? 'Network name' : 'e.g. Google' }),
+    website: h('input', { class:'input', type:'text', value:d.website || '', id:'f_web', autocomplete:'off', placeholder:'example.com' }),
+    username: h('input', { class:'input', type:'text', value:d.username || '', id:'f_user', autocomplete:'off' }),
+    password: h('input', { class:'input', type:'password', value:d.password || '', id:'f_pw', autocomplete:'new-password', style:'font-family:Consolas,monospace' }),
+    totp: h('input', { class:'input', type:'text', value: d.totp ? d.totp.secret : '', id:'f_totp', autocomplete:'off', placeholder:'Setup key or otpauth:// link (optional)' }),
+    notes: h('textarea', { class:'input', id:'f_notes' })
+  };
+  f.notes.value = d.notes || '';
+  const err = h('div', { class:'err', role:'alert' });
+  const show = h('button', { class:'btn small', type:'button', onclick:() => { f.password.type = f.password.type === 'password' ? 'text' : 'password'; show.textContent = f.password.type === 'password' ? 'Show' : 'Hide'; } }, 'Show');
+  const strongBtn = h('button', { class:'btn small', type:'button', onclick:() => { f.password.value = generateStrong(); f.password.type = 'text'; show.textContent = 'Hide'; } }, 'Suggest');
+  const lenIn = h('input', { type:'range', min:'8', max:'64', value:'20' });
+  const lenLbl = h('span', { text:'20' });
+  lenIn.addEventListener('input', () => lenLbl.textContent = lenIn.value);
+  const oU = h('input', { type:'checkbox', checked:true }), oD = h('input', { type:'checkbox', checked:true }), oS = h('input', { type:'checkbox', checked:true });
+  const custom = h('details', { style:'margin-top:8px' }, h('summary', { class:'muted', style:'cursor:pointer;font-size:13px', text:'Custom password generator' }),
+    h('div', { class:'setrow' }, h('span', { text:'Length' }), lenIn, lenLbl),
+    h('div', { class:'optgrid' }, h('label', {}, oU, 'Uppercase'), h('label', {}, oD, 'Numbers'), h('label', {}, oS, 'Symbols')),
+    h('button', { class:'btn small', type:'button', style:'margin-top:10px', onclick:() => { f.password.value = generateCustom(parseInt(lenIn.value, 10), { upper:oU.checked, digits:oD.checked, symbols:oS.checked }); f.password.type = 'text'; show.textContent = 'Hide'; } }, 'Generate'));
+  const L = (text, id) => h('label', { class:'lbl', for:id, text });
+  const form = h('form', { onsubmit: ev => {
+    ev.preventDefault(); err.textContent = '';
+    let totp = null;
+    if (type === 'login'){
+      const typed = f.totp.value.trim().toUpperCase().replace(/[\s=-]/g, '');
+      if (existing && existing.totp && typed === existing.totp.secret) totp = existing.totp;
+      else { try { totp = parseTotp(f.totp.value); } catch(e){ err.textContent = e.message; return; } }
+    }
+    const rec = existing || { id:newId(), type, created:Date.now() };
+    const next = { title:f.title.value.trim(), website:type === 'login' ? f.website.value.trim() : '', username:type === 'login' ? f.username.value.trim() : '', password:f.password.value, notes:f.notes.value.trim() };
+    if (!next.title && !next.website && !next.username && !next.password){ err.textContent = 'Enter at least a name, website, user name or password.'; return; }
+    Object.assign(rec, next); rec.modified = Date.now();
+    if (type === 'login'){ if (totp) rec.totp = totp; else delete rec.totp; }
+    if (isNew) S.items.push(rec);
+    touch(); persist(); S.sel = rec.id; S.reveal = false; S.leaks.delete(rec.id);
+    if (type === 'wifi') S.view = 'wifi';
+    else if (S.view === 'wifi' || S.view === 'deleted' || S.view === 'security' || (S.view === 'codes' && !rec.totp)) S.view = 'all';
+    S.q = ''; $('q').value = '';
+    closeModal(); toast(isNew ? 'Saved' : 'Changes saved'); $('app').classList.add('showdetail'); render();
+  }},
+    h('h3', { text: (isNew ? 'New ' : 'Edit ') + (type === 'wifi' ? 'Wi-Fi network' : 'password') }),
+    L(type === 'wifi' ? 'Network name' : 'Name', 'f_title'), f.title,
+    type === 'login' ? [L('Website', 'f_web'), f.website, L('User name', 'f_user'), f.username] : null,
+    L(type === 'wifi' ? 'Wi-Fi password' : 'Password', 'f_pw'),
+    h('div', { class:'inline' }, f.password, show, strongBtn), custom,
+    type === 'login' ? [L('Verification code setup key', 'f_totp'), f.totp] : null,
+    L('Notes', 'f_notes'), f.notes, err,
+    h('div', { class:'actions' }, h('button', { class:'btn', type:'button', onclick:closeModal }, 'Cancel'), h('button', { class:'btn primary', type:'submit' }, 'Save')));
+  openModal(h('div', { class:'modal' }, form));
+}
+
+/* ---------- backup / import / export ---------- */
+function download(name, text, mime){
+  const url = URL.createObjectURL(new Blob([text], { type:mime }));
+  const a = h('a', { href:url, download:name }); document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+const stamp = () => new Date().toISOString().slice(0, 10);
+async function exportBackup(){
+  try {
+    const blob = await sealPayload(S.key, S.salt, S.iter, { items:S.items, settings:S.settings });
+    download('passwords-backup-' + stamp() + '.pwvault', JSON.stringify(blob), 'application/json');
+    S.settings.changes = 0; S.settings.lastBackup = Date.now(); persist(); toast('Backup saved to your Downloads'); render();
+  } catch(e){ toast('Backup failed: ' + e.message); }
+}
+function pickFile(accept){
+  return new Promise(resolve => {
+    const inp = h('input', { type:'file', accept, style:'display:none' });
+    inp.addEventListener('change', () => { const f = inp.files[0]; inp.remove(); if (!f) return resolve(null); const r = new FileReader(); r.onload = () => resolve(String(r.result)); r.onerror = () => resolve(null); r.readAsText(f); });
+    document.body.append(inp); inp.click();
+  });
+}
+function askPassword(title, text, onSubmit){
+  const pw = h('input', { class:'input', type:'password', autocomplete:'off', 'aria-label':'Password' });
+  const err = h('div', { class:'err', role:'alert' });
+  const go = h('button', { class:'btn primary', type:'submit' }, 'Continue');
+  const form = h('form', { onsubmit: async ev => { ev.preventDefault(); err.textContent = ''; go.disabled = true; go.textContent = 'Working…';
+    try { await onSubmit(pw.value); } catch(e){ err.textContent = e.message === 'bad-password' ? 'Incorrect password for that backup.' : e.message === 'bad-format' ? 'That file is not a valid backup.' : e.message; go.disabled = false; go.textContent = 'Continue'; } } },
+    h('h3', { text:title }), h('p', { class:'muted', text:text }), pw, err, h('div', { class:'actions' }, h('button', { class:'btn', type:'button', onclick:closeModal }, 'Cancel'), go));
+  openModal(h('div', { class:'modal' }, form));
+}
+async function readBackupFile(){
+  const text = await pickFile('.pwvault,.json,application/json');
+  if (text == null) return null;
+  let b; try { b = JSON.parse(text); } catch(e){ toast('That file is not a valid backup.'); return null; }
+  if (!validBlob(b)){ toast('That file is not a valid backup.'); return null; }
+  return b;
+}
+async function restoreFromBackupFlow(){
+  const b = await readBackupFile(); if (!b) return;
+  askPassword('Restore backup', 'Enter the master password this backup was saved with. It will become your master password.', async pw => {
+    const r = await openBlob(b, pw);
+    S.key = r.key; S.salt = r.salt; S.iter = r.iter;
+    S.items = r.payload.items.filter(validItem);
+    S.settings = Object.assign({ autoLockMin:5, clearClip:true, changes:0, lastBackup:0 }, r.payload.settings || {});
+    await persist();
+    if (!loadBlob()) throw new Error('Could not save to this browser.');
+    closeModal(); enterApp(); toast('Backup restored');
+  });
+}
+async function mergeBackupFlow(){
+  const b = await readBackupFile(); if (!b) return;
+  askPassword('Import backup', 'Enter the master password of that backup file. Items are merged into your vault.', async pw => {
+    const r = await openBlob(b, pw);
+    let added = 0, updated = 0;
+    for (const inc of r.payload.items.filter(validItem)){
+      const cur = S.items.find(x => x.id === inc.id);
+      if (!cur){ S.items.push(inc); added++; }
+      else if ((inc.modified || 0) > (cur.modified || 0)){ Object.assign(cur, inc); updated++; }
+    }
+    touch(); await persist(); closeModal(); render(); toast('Imported ' + added + ' new, ' + updated + ' updated');
+  });
+}
+function csvEscape(v){ v = v == null ? '' : String(v); return /[",\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+function exportCsv(){
+  confirmBox('Export unencrypted CSV?', 'The file will contain all your passwords in plain text. Anyone who opens it can read them. Delete it as soon as you have imported it elsewhere.', 'Export', () => {
+    const rows = [['Title','URL','Username','Password','Notes','OTPAuth','Type']];
+    for (const i of activeItems()){
+      let otp = '';
+      if (i.totp) otp = 'otpauth://totp/' + encodeURIComponent(titleOf(i)) + '?secret=' + i.totp.secret + '&algorithm=' + i.totp.algo.replace('-', '') + '&digits=' + i.totp.digits + '&period=' + i.totp.period;
+      rows.push([i.title, i.website, i.username, i.password, i.notes, otp, i.type]);
+    }
+    download('passwords-export-' + stamp() + '.csv', '\ufeff' + rows.map(r => r.map(csvEscape).join(',')).join('\r\n') + '\r\n', 'text/csv');
+    toast('CSV exported — delete it after use');
+  });
+}
+function parseCsv(text){
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  const rows = []; let row = [], f = '', q = false, i = 0, any = false;
+  while (i < text.length){
+    const c = text[i];
+    if (q){
+      if (c === '"'){ if (text[i+1] === '"'){ f += '"'; i += 2; continue; } q = false; i++; continue; }
+      f += c; i++; continue;
+    }
+    if (c === '"'){ q = true; any = true; i++; continue; }
+    if (c === ','){ row.push(f); f = ''; any = true; i++; continue; }
+    if (c === '\r' || c === '\n'){
+      if (c === '\r' && text[i+1] === '\n') i++;
+      row.push(f); f = ''; if (any || row.some(x => x !== '') ) rows.push(row); row = []; any = false; i++; continue;
+    }
+    f += c; any = true; i++;
+  }
+  if (any || f !== '' || row.length){ row.push(f); rows.push(row); }
+  return rows;
+}
+async function importCsv(){
+  const text = await pickFile('.csv,text/csv'); if (text == null) return;
+  const rows = parseCsv(text);
+  if (rows.length < 2){ toast('That CSV has no rows.'); return; }
+  const head = rows[0].map(x => x.trim().toLowerCase());
+  const col = (...names) => head.findIndex(x => names.includes(x));
+  const ci = { title:col('title','name'), url:col('url','website','login_uri','web site'), user:col('username','user name','login','login_username','user'), pw:col('password','login_password'), notes:col('notes','note','extra'), otp:col('otpauth','totp','login_totp'), type:col('type') };
+  if (ci.pw < 0 && ci.user < 0 && ci.title < 0){ toast('Could not find Title / Username / Password columns.'); return; }
+  const get = (r, i) => i >= 0 && r[i] != null ? r[i] : '';
+  let added = 0, dup = 0, badOtp = 0;
+  for (const r of rows.slice(1)){
+    const rec = { id:newId(), type: get(r, ci.type).trim().toLowerCase() === 'wifi' ? 'wifi' : 'login', title:get(r, ci.title).trim(), website:get(r, ci.url).trim(), username:get(r, ci.user).trim(), password:get(r, ci.pw), notes:get(r, ci.notes).trim(), created:Date.now(), modified:Date.now() };
+    if (!rec.title && !rec.website && !rec.username && !rec.password) continue;
+    if (rec.type === 'wifi'){ rec.website = ''; rec.username = ''; }
+    const o = get(r, ci.otp).trim();
+    if (o && rec.type === 'login'){ try { const t = parseTotp(o); if (t) rec.totp = t; } catch(e){ badOtp++; } }
+    if (S.items.some(x => !x.deleted && x.type === rec.type && x.title === rec.title && x.website === rec.website && x.username === rec.username && x.password === rec.password)){ dup++; continue; }
+    S.items.push(rec); added++;
+  }
+  touch(); await persist(); render();
+  toast('Imported ' + added + (dup ? ', skipped ' + dup + ' duplicate' + (dup > 1 ? 's' : '') : '') + (badOtp ? ', ' + badOtp + ' code key(s) ignored' : ''));
+}
+
+/* ---------- settings ---------- */
+function openSettings(){
+  const sel = h('select', { class:'input', style:'width:auto', 'aria-label':'Auto-lock' });
+  for (const m of [1, 2, 5, 10, 15, 30]) sel.append(h('option', { value:String(m), text:m + ' minute' + (m > 1 ? 's' : ''), selected: S.settings.autoLockMin === m }));
+  sel.addEventListener('change', () => { S.settings.autoLockMin = parseInt(sel.value, 10); persist(); armIdle(); });
+  const clip = h('input', { type:'checkbox', checked:!!S.settings.clearClip, id:'clipchk' });
+  clip.addEventListener('change', () => { S.settings.clearClip = clip.checked; persist(); });
+  const sec = t => h('div', { class:'muted', style:'font-size:12px;margin:14px 0 6px;font-weight:600', text:t });
+  const btn = (t, fn, cls) => h('button', { class:'btn small ' + (cls || ''), style:'margin:0 6px 6px 0', onclick:fn }, t);
+  const last = S.settings.lastBackup ? 'Last backup: ' + fmtDate(S.settings.lastBackup) : 'You have not saved a backup yet.';
+  openModal(h('div', { class:'modal' }, h('h3', { text:'Settings' }),
+    sec('SECURITY'),
+    h('div', { class:'setrow' }, h('span', { class:'grow', text:'Lock automatically after' }), sel),
+    h('label', { class:'setrow', for:'clipchk' }, clip, h('span', { class:'grow', text:'Clear copied passwords from the clipboard after 30 seconds' })),
+    btn('Change master password', () => { closeModal(); openChangeMaster(); }),
+    sec('BACKUP & TRANSFER'),
+    h('div', { class:'muted', style:'font-size:13px;margin-bottom:8px', text:last }),
+    btn('Save encrypted backup', () => { closeModal(); exportBackup(); }, 'primary'),
+    btn('Import backup file…', () => { closeModal(); mergeBackupFlow(); }),
+    btn('Import CSV…', () => { closeModal(); importCsv(); }),
+    btn('Export CSV (unencrypted)…', () => { closeModal(); exportCsv(); }),
+    sec('DANGER ZONE'),
+    btn('Erase everything…', () => { closeModal(); openErase(); }, 'danger'),
+    h('div', { class:'actions' }, h('button', { class:'btn primary', onclick:closeModal }, 'Done'))));
+}
+function openChangeMaster(){
+  const cur = h('input', { class:'input', type:'password', autocomplete:'current-password', 'aria-label':'Current master password' });
+  const n1 = h('input', { class:'input', type:'password', autocomplete:'new-password', 'aria-label':'New master password' });
+  const n2 = h('input', { class:'input', type:'password', autocomplete:'new-password', 'aria-label':'Confirm new master password' });
+  const err = h('div', { class:'err', role:'alert' });
+  const go = h('button', { class:'btn primary', type:'submit' }, 'Change password');
+  const form = h('form', { onsubmit: async ev => {
+    ev.preventDefault(); err.textContent = '';
+    if (n1.value.length < 10){ err.textContent = 'Use at least 10 characters.'; return; }
+    if (masterStrength(n1.value).weak){ err.textContent = 'That password is too easy to guess.'; return; }
+    if (n1.value !== n2.value){ err.textContent = 'The new passwords do not match.'; return; }
+    go.disabled = true; go.textContent = 'Working…';
+    try {
+      await saveChain;
+      try { await openBlob(loadBlob(), cur.value); } catch(e){ throw new Error('Current master password is incorrect.'); }
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      const key = await deriveKey(n1.value, salt, ITER);
+      const blob = await sealPayload(key, salt, ITER, { items:S.items, settings:S.settings });
+      const prev = localStorage.getItem(LS_KEY);
+      localStorage.setItem(LS_KEY, JSON.stringify(blob));
+      try { await openBlob(JSON.parse(localStorage.getItem(LS_KEY)), n1.value); }
+      catch(e){ if (prev != null) localStorage.setItem(LS_KEY, prev); throw new Error('Verification failed; nothing was changed.'); }
+      S.key = key; S.salt = salt; S.iter = ITER;
+      closeModal(); toast('Master password changed. Save a new backup.');
+    } catch(e){ err.textContent = e.message; go.disabled = false; go.textContent = 'Change password'; }
+  }}, h('h3', { text:'Change master password' }),
+    h('label', { class:'lbl', text:'Current master password' }), cur, h('label', { class:'lbl', text:'New master password' }), n1, h('label', { class:'lbl', text:'Confirm new master password' }), n2, err,
+    h('div', { class:'actions' }, h('button', { class:'btn', type:'button', onclick:closeModal }, 'Cancel'), go));
+  openModal(h('div', { class:'modal' }, form));
+}
+function openErase(){
+  const t = h('input', { class:'input', type:'text', autocomplete:'off', placeholder:'Type ERASE to confirm', 'aria-label':'Type ERASE to confirm' });
+  const go = h('button', { class:'btn danger', disabled:true, onclick:() => { try { localStorage.removeItem(LS_KEY); } catch(e){} closeModal(); showLock(); } }, 'Erase everything');
+  t.addEventListener('input', () => go.disabled = t.value.trim() !== 'ERASE');
+  openModal(h('div', { class:'modal' }, h('h3', { text:'Erase everything?' }),
+    h('p', { class:'muted', text:'This permanently deletes the vault stored in this browser. If you have no backup, your passwords are gone for good.' }), t,
+    h('div', { class:'actions' }, h('button', { class:'btn', onclick:closeModal }, 'Cancel'), go)));
+}
+
+/* ---------- wiring ---------- */
+$('brandlogo').append(icon('key'));
+setIcon($('btnSettings'), 'gear'); $('btnSettings').append(h('span', { text:'Settings' }));
+setIcon($('btnLock'), 'lock'); $('btnLock').append(h('span', { text:'Lock' }));
+setIcon($('btnAdd'), 'plus'); setIcon($('btnNavBack'), 'back');
+$('btnSettings').addEventListener('click', openSettings);
+$('btnLock').addEventListener('click', lockNow);
+$('btnAdd').addEventListener('click', () => openEditor(null));
+$('btnNavBack').addEventListener('click', () => $('app').classList.add('shownav'));
+$('q').addEventListener('input', e => { S.q = e.target.value; if (S.view === 'security'){ S.view = 'all'; } renderNav(); renderList(); startTicker(); });
+document.addEventListener('keydown', e => {
+  if (!S.unlocked) return;
+  if (e.key === 'Escape' && !$('modalwrap').classList.contains('hidden')) { closeModal(); return; }
+  if (!$('modalwrap').classList.contains('hidden')) return;
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f'){ e.preventDefault(); $('q').focus(); $('q').select(); }
+});
+
+showLock();
+</script>
+</body>
+</html>
